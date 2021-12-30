@@ -38,6 +38,14 @@ export default class {
     this._personalFMTrack = { id: 0 }; // 私人FM当前歌曲
     this._personalFMNextTrack = { id: 0 }; // 私人FM下一首歌曲信息（为了快速加载下一首）
 
+    /**
+     * The blob records for cleanup.
+     *
+     * @private
+     * @type {string[]}
+     */
+    this.createdBlobRecords = [];
+
     // howler (https://github.com/goldfire/howler.js)
     this._howler = null;
     Object.defineProperty(this, '_howler', {
@@ -235,7 +243,9 @@ export default class {
     });
     if (autoplay) {
       this.play();
-      document.title = `${this._currentTrack.name} · ${this._currentTrack.ar[0].name} - YesPlayMusic`;
+      if (this._currentTrack.name) {
+        document.title = `${this._currentTrack.name} · ${this._currentTrack.ar[0].name} - YesPlayMusic`;
+      }
     }
     this.setOutputDevice();
     this._howler.once('end', () => {
@@ -245,7 +255,21 @@ export default class {
   _getAudioSourceFromCache(id) {
     return getTrackSource(id).then(t => {
       if (!t) return null;
+
+      // Create a new object URL.
       const source = URL.createObjectURL(new Blob([t.source]));
+
+      // Clean up the previous object URLs since we've created a new one.
+      // Revoke object URLs can release the memory taken by a Blob,
+      // which occupied a large proportion of memory.
+      for (const url in this.createdBlobRecords) {
+        URL.revokeObjectURL(url);
+      }
+
+      // Then, we replace the createBlobRecords with new one with
+      // our newly created object URL.
+      this.createdBlobRecords = [source];
+
       return source;
     });
   }
@@ -267,7 +291,7 @@ export default class {
       });
     }
   }
-  _getAudioSourceFromUnblockMusic(track) {
+  async _getAudioSourceFromUnblockMusic(track) {
     console.debug(`[debug][Player.js] _getAudioSourceFromUnblockMusic`);
     if (
       process.env.IS_ELECTRON !== true ||
@@ -275,7 +299,11 @@ export default class {
     ) {
       return null;
     }
-    const source = ipcRenderer.sendSync('unblock-music', track);
+    const source = await ipcRenderer.invoke(
+      'unblock-music',
+      track,
+      store.state.settings.unmSource
+    );
     if (store.state.settings.automaticallyCacheSongs && source?.url) {
       // TODO: 将unblockMusic字样换成真正的来源（比如酷我咪咕等）
       cacheTrackSource(track, source.url, 128000, 'unblockMusic');
@@ -485,7 +513,9 @@ export default class {
     if (this._howler?.playing()) return;
     this._howler?.play();
     this._playing = true;
-    document.title = `${this._currentTrack.name} · ${this._currentTrack.ar[0].name} - YesPlayMusic`;
+    if (this._currentTrack.name) {
+      document.title = `${this._currentTrack.name} · ${this._currentTrack.ar[0].name} - YesPlayMusic`;
+    }
     this._playDiscordPresence(this._currentTrack, this.seek());
     if (store.state.lastfm.key !== undefined) {
       trackUpdateNowPlaying({

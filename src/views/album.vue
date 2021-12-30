@@ -73,7 +73,7 @@
     </div>
     <div v-if="Object.keys(tracksByDisc).length !== 1">
       <div v-for="(disc, cd) in tracksByDisc" :key="cd">
-        <h2>Disc {{ cd }}</h2>
+        <h2 class="disc">Disc {{ cd }}</h2>
         <TrackList
           :id="album.id"
           :tracks="disc"
@@ -136,6 +136,9 @@
       <div class="item">{{ $t('contextMenu.addToPlaylist') }}</div>
       <div class="item" @click="copyUrl(album.id)">{{
         $t('contextMenu.copyUrl')
+      }}</div>
+      <div class="item" @click="openInBrowser(album.id)">{{
+        $t('contextMenu.openInBrowser')
       }}</div>
     </ContextMenu>
   </div>
@@ -305,13 +308,17 @@ export default {
     },
     copyUrl(id) {
       let showToast = this.showToast;
-      this.$copyText('https://music.163.com/#/album?id=' + id)
+      this.$copyText(`https://music.163.com/#/album?id=${id}`)
         .then(function () {
           showToast(locale.t('toast.copied'));
         })
         .catch(error => {
           showToast(`${locale.t('toast.copyFailed')}${error}`);
         });
+    },
+    openInBrowser(id) {
+      const url = `https://music.163.com/#/album?id=${id}`;
+      window.open(url);
     },
   },
 };
@@ -377,6 +384,9 @@ export default {
       }
     }
   }
+}
+.disc {
+  color: var(--color-text);
 }
 
 .explicit-symbol {

@@ -46,10 +46,14 @@
               <div class="track-info">
                 <div class="title" :title="currentTrack.name">
                   <router-link
-                    :to="`/${player.playlistSource.type}/${player.playlistSource.id}`"
+                    v-if="hasList()"
+                    :to="`${getListPath()}`"
                     @click.native="toggleLyrics"
                     >{{ currentTrack.name }}
                   </router-link>
+                  <span v-else>
+                    {{ currentTrack.name }}
+                  </span>
                 </div>
                 <div class="subtitle">
                   <router-link
@@ -209,6 +213,7 @@ import { lyricParser } from '@/utils/lyrics';
 import ButtonIcon from '@/components/ButtonIcon.vue';
 import * as Vibrant from 'node-vibrant';
 import Color from 'color';
+import { hasListSource, getListSourcePath } from '@/utils/playList';
 
 export default {
   name: 'Lyrics',
@@ -333,7 +338,13 @@ export default {
     },
     clickLyricLine(value, startPlay = false) {
       // TODO: 双击选择还会选中文字，考虑搞个右键菜单复制歌词
-      if (window.getSelection().toString().length === 0) {
+      let jumpFlag = false;
+      this.lyric.filter(function (item) {
+        if (item.content == '纯音乐，请欣赏') {
+          jumpFlag = true;
+        }
+      });
+      if (window.getSelection().toString().length === 0 && !jumpFlag) {
         this.player.seek(value);
       }
       if (startPlay === true) {
@@ -384,6 +395,12 @@ export default {
           const color2 = orignColor.lighten(0.28).rotate(-30).rgb().string();
           this.background = `linear-gradient(to top left, ${color}, ${color2})`;
         });
+    },
+    hasList() {
+      return hasListSource();
+    },
+    getListPath() {
+      return getListSourcePath();
     },
   },
 };
@@ -624,6 +641,7 @@ export default {
     max-width: 460px;
     overflow-y: auto;
     transition: 0.5s;
+    scrollbar-width: none; // firefox
 
     .line {
       padding: 18px;

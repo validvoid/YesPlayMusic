@@ -43,7 +43,7 @@
           <span v-if="isAlbum && track.mark === 1318912" class="explicit-symbol"
             ><ExplicitSymbol
           /></span>
-          <span v-if="isSubTitle" :title="subTitle" class="subTitle">
+          <span v-if="isSubTitle" :title="subTitle" class="sub-title">
             ({{ subTitle }})
           </span>
         </div>
@@ -60,7 +60,9 @@
     </div>
 
     <div v-if="showAlbumName" class="album">
-      <router-link :to="`/album/${album.id}`">{{ album.name }}</router-link>
+      <router-link v-if="album && album.id" :to="`/album/${album.id}`">{{
+        album.name
+      }}</router-link>
       <div></div>
     </div>
 
@@ -85,6 +87,7 @@
 import ArtistsInLine from '@/components/ArtistsInLine.vue';
 import ExplicitSymbol from '@/components/ExplicitSymbol.vue';
 import { mapState } from 'vuex';
+import { isNil } from 'lodash';
 
 export default {
   name: 'TrackListItem',
@@ -117,8 +120,9 @@ export default {
       return image + '?param=224y224';
     },
     artists() {
-      if (this.track.ar !== undefined) return this.track.ar;
-      if (this.track.artists !== undefined) return this.track.artists;
+      const { ar, artists } = this.track;
+      if (!isNil(ar)) return ar;
+      if (!isNil(artists)) return artists;
       return [];
     },
     album() {
@@ -308,7 +312,7 @@ button {
         font-size: 14px;
         opacity: 0.72;
       }
-      .subTitle {
+      .sub-title {
         color: #aeaeae;
         margin-left: 4px;
       }
@@ -412,7 +416,7 @@ button {
   .title,
   .album,
   .time,
-  .title-and-artist .subTitle {
+  .title-and-artist .sub-title {
     color: var(--color-primary);
   }
   .title .featured,
